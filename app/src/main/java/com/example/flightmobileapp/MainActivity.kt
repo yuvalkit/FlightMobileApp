@@ -14,6 +14,19 @@ class MainActivity : AppCompatActivity() {
     private var urlList = arrayListOf<String>()
     private var urlObjectList = arrayListOf<Button>()
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        urlObjectList.addAll(listOf(url0, url1, url2, url3, url4))
+        makeUrlsInvisible()
+        disableCapitalLetter()
+        connectButton.setOnClickListener {
+            updateList()
+            tryToConnect()
+        }
+        setButtonsClickEvent()
+    }
+
     private fun showList() {
         var i = 0
         for (item: String in urlList) {
@@ -86,18 +99,5 @@ class MainActivity : AppCompatActivity() {
         if(button.visibility == View.VISIBLE) {
             insertBox.setText(button.text.toString())
         }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        urlObjectList.addAll(listOf(url0, url1, url2, url3, url4))
-        makeUrlsInvisible()
-        disableCapitalLetter()
-        connectButton.setOnClickListener {
-            updateList()
-            tryToConnect()
-        }
-        setButtonsClickEvent()
     }
 }
