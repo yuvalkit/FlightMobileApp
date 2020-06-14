@@ -6,6 +6,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <io.github.controlwear.virtual.joystick.android.JoystickView
+        android:id="@+id/joystick"
+        android:layout_width="279dp"
+        android:layout_height="251dp"
+        android:layout_marginTop="290dp"
+        android:elevation="2dp"
+        app:JV_backgroundColor="#788AED"
+        app:JV_borderColor="#00796B"
+        app:JV_borderWidth="4dp"
+        app:JV_buttonColor="#0F2A47"
+        app:JV_buttonSizeRatio="25%"
+        app:JV_fixedCenter="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/elevatorText"
+        app:layout_constraintHorizontal_bias="0.504"
+        app:layout_constraintStart_toEndOf="@+id/throttleText"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.487"
+        tools:ignore="MissingConstraints" />
+
     <SeekBar
         android:id="@+id/throttleBar"
         android:layout_width="286dp"

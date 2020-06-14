@@ -1,12 +1,12 @@
 package com.example.flightmobileapp
 
 import android.os.Bundle
-import android.renderscript.Sampler
 import android.util.Log
-import android.view.Window
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.play_mode.*
+import java.lang.Math.*
+
 
 class PlayModeActivity : AppCompatActivity() {
     private var lastRudder = 100.0
@@ -19,6 +19,23 @@ class PlayModeActivity : AppCompatActivity() {
         setContentView(R.layout.play_mode)
         setSlidersRanges()
         setSlidersListeners()
+        joystick.setOnMoveListener { angle, strength ->
+            updateAileronAndElevator(angle, strength)
+        }
+    }
+
+    private fun updateAileronAndElevator(angle : Int, strength : Int) {
+        var ratio = strength.toDouble() / 100
+        var x = kotlin.math.cos(toRadians(angle.toDouble())) * ratio
+        var y = kotlin.math.sin(toRadians(angle.toDouble())) * ratio
+        if(hasChanged(x, lastAileron, 2.0)) {
+            Log.d("EA", "aileron is changed to ${x}")
+            lastAileron = x
+        }
+        if(hasChanged(y, lastElevator, 2.0)) {
+            Log.d("EA", "elevator is changed to ${y}")
+            lastElevator = y
+        }
     }
 
     private fun setSlidersRanges() {

@@ -8,7 +8,10 @@ import android.view.View
 import android.view.Window
 import android.widget.Button
 import androidx.core.view.isVisible
+import androidx.room.Room
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.*
+import java.lang.Thread.sleep
 
 class MainActivity : AppCompatActivity() {
     private var urlList = arrayListOf<String>()
@@ -17,17 +20,64 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         urlObjectList.addAll(listOf(url0, url1, url2, url3, url4))
-        makeUrlsInvisible()
         disableCapitalLetter()
+        joinPopulate()
+        showList()
         connectButton.setOnClickListener {
             updateList()
+            showList()
             tryToConnect()
+        }
+        clearButton.setOnClickListener {
+            urlList.clear()
+            showList()
         }
         setButtonsClickEvent()
     }
 
+    private fun joinPopulate()  = runBlocking<Unit> {
+        var execute = GlobalScope.launch {
+            populateList()
+        }
+        execute.join()
+    }
+
+    private suspend fun populateList() {
+        var db = Room.databaseBuilder(applicationContext, MyRoom::class.java, "urlsDB").build()
+        urlList.clear()
+        var i = 0
+        db.urlDAO().readUrl().forEach() {
+            urlList.add(it.urlId, it.url)
+            i++
+        }
+        Log.d("EA", "read ${i} objects")
+    }
+
+    private suspend fun saveDB() {
+        var db = Room.databaseBuilder(applicationContext, MyRoom::class.java, "urlsDB").build()
+        db.clearAllTables()
+        var i = 0
+        for (url in urlList) {
+            var entity = MyUrlEntity()
+            entity.urlId = i
+            entity.url = url
+            db.urlDAO().saveUrl(entity)
+            i++
+        }
+        Log.d("EA", "entered ${i} objects")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CoroutineScope(Dispatchers.IO).launch {
+            saveDB()
+        }
+    }
+
     private fun showList() {
+        makeUrlsInvisible()
         var i = 0
         for (item: String in urlList) {
             when(i) {
@@ -72,7 +122,6 @@ class MainActivity : AppCompatActivity() {
         if(urlList.size == 6) {
             urlList.removeAt(5);
         }
-        showList()
     }
 
     private fun makeUrlsInvisible() {
