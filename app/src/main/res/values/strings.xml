@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">FlightMobileApp</string>
+    <string name="type_url">Type URL..</string>
+    <string name="connect_button">Connect</string>
+    <string name="rudder">⟵     rudder     ⟶</string>
+    <string name="throttle">⟵     throttle     ⟶</string>
+    <string name="aileron">⟵     aileron     ⟶</string>
+    <string name="elevator">⟵     elevator     ⟶</string>
+</resources>
