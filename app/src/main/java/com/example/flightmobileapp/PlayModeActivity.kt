@@ -13,6 +13,14 @@ class PlayModeActivity : AppCompatActivity() {
     private var lastThrottle = 100.0
     private var lastAileron = 100.0
     private var lastElevator = 100.0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.play_mode)
+        setSlidersRanges()
+        setSlidersListeners()
+    }
+
     private fun setSlidersRanges() {
         throttleBar.max = 100
         rudderBar.max = 200
@@ -65,12 +73,5 @@ class PlayModeActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seek: SeekBar) {
             }
         })
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.play_mode)
-        setSlidersRanges()
-        setSlidersListeners()
     }
 }
