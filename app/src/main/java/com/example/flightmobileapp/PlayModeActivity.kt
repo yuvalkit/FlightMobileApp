@@ -8,7 +8,7 @@ import kotlinx.android.synthetic.main.play_mode.*
 import java.lang.Math.*
 
 
-class PlayModeActivity : AppCompatActivity() {
+class PlayModeActivity : AppCompatActivity(), OnMoveListener, OnMultipleLongPressListener {
     private var lastRudder = 100.0
     private var lastThrottle = 100.0
     private var lastAileron = 100.0
@@ -19,10 +19,10 @@ class PlayModeActivity : AppCompatActivity() {
         setContentView(R.layout.play_mode)
         setSlidersRanges()
         setSlidersListeners()
-        joystick.setOnMoveListener { angle, strength ->
-            updateAileronAndElevator(angle, strength)
-        }
+        joystick.setOnMoveListener(this)
     }
+
+
 
     private fun updateAileronAndElevator(angle : Int, strength : Int) {
         var ratio = strength.toDouble() / 100
@@ -90,5 +90,13 @@ class PlayModeActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seek: SeekBar) {
             }
         })
+    }
+
+    override fun onMove(angle: Int, strength: Int) {
+        updateAileronAndElevator(angle, strength)
+    }
+
+    override fun onMultipleLongPress() {
+        TODO("Not yet implemented")
     }
 }
