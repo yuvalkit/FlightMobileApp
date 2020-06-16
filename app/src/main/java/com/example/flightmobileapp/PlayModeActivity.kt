@@ -19,10 +19,7 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener, OnMultipleLongPres
         super.onCreate(savedInstanceState)
         setContentView(R.layout.play_mode)
         setSlidersRanges()
-        val b = intent.extras
-        val image = b!!.get("image")
-        var screenshot = (image as MyImage).screenshot
-        setScreenshot(screenshot)
+        setScreenshot(MyScreenshot.screenshot)
         setSlidersListeners()
         joystick.setOnMoveListener(this)
     }

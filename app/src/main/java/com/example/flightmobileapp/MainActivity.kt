@@ -115,39 +115,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun tryToConnect(){
         var successFlag = false
-        //var url = insertBox.text.toString()
-        var url = "http://10.0.2.2:50242"
-        Log.d("EA", "before. url is ${url}")
+        var url = insertBox.text.toString()
+        //var url = "http://10.0.2.2:50242"
         val gson = GsonBuilder() .setLenient() .create()
         try {
-            Log.d("EA", url)
             val retrofit = Retrofit.Builder()
                 .baseUrl(url)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()
-            Log.d("EA", "after retrofit")
             val api = retrofit.create(Api::class.java)
             val body = api.getScreenshot().enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    Log.d("EA", "in response")
                     val stream = response?.body()?.byteStream()
-                    Log.d("EA", "after stream")
                     var bitmapImage = BitmapFactory.decodeStream(stream)
-
-                    Log.d("EA", "after bitmap")
-                    if(bitmapImage is Bitmap) {
-                        var image = MyImage(bitmapImage)
-                        val intent = Intent(this@MainActivity, PlayModeActivity::class.java)
-                        var b = Bundle()
-                        b.putSerializable("image", image)
-                        intent.putExtras(b)
-                        startActivity(intent)
+                    if (bitmapImage is Bitmap) {
+                        MyScreenshot.screenshot = bitmapImage
+                        startActivity(Intent(this@MainActivity, PlayModeActivity::class.java))
                     } else {
-                        throw Exception()
+                        Log.d("EA", "failed. bitmapImage is $bitmapImage")
                     }
+
                 }
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    Log.d("EA", "failed. respones is ${t}")
+                    Log.d("EA", "failed. response is $t")
                 }
             })
         }
