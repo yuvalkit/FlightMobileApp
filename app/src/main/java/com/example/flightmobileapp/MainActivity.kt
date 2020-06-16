@@ -1,17 +1,23 @@
 package com.example.flightmobileapp
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.view.Window
 import android.widget.Button
-import androidx.core.view.isVisible
+import androidx.appcompat.app.AppCompatActivity
 import androidx.room.Room
+import com.google.gson.GsonBuilder
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
-import java.lang.Thread.sleep
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : AppCompatActivity() {
     private var urlList = arrayListOf<String>()
@@ -26,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         joinPopulate()
         showList()
         connectButton.setOnClickListener {
+            Log.d("EA","clicked")
             updateList()
             showList()
             tryToConnect()
@@ -107,10 +114,46 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tryToConnect(){
-        var url = insertBox.text.toString()
-        var screenshot = "${url}/screenshot"
+        var successFlag = false
+        //var url = insertBox.text.toString()
+        var url = "http://10.0.2.2:50242"
+        Log.d("EA", "before. url is ${url}")
+        val gson = GsonBuilder() .setLenient() .create()
+        try {
+            Log.d("EA", url)
+            val retrofit = Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build()
+            Log.d("EA", "after retrofit")
+            val api = retrofit.create(Api::class.java)
+            val body = api.getScreenshot().enqueue(object : Callback<ResponseBody> {
+                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    Log.d("EA", "in response")
+                    val stream = response?.body()?.byteStream()
+                    Log.d("EA", "after stream")
+                    var bitmapImage = BitmapFactory.decodeStream(stream)
 
-        startActivity(Intent(this, PlayModeActivity::class.java))
+                    Log.d("EA", "after bitmap")
+                    if(bitmapImage is Bitmap) {
+                        var image = MyImage(bitmapImage)
+                        val intent = Intent(this@MainActivity, PlayModeActivity::class.java)
+                        var b = Bundle()
+                        b.putSerializable("image", image)
+                        intent.putExtras(b)
+                        startActivity(intent)
+                    } else {
+                        throw Exception()
+                    }
+                }
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    Log.d("EA", "failed. respones is ${t}")
+                }
+            })
+        }
+        catch(e: Exception) {
+            Log.d("EA", "in catch. failed trying getting image")
+        }
     }
 
     private fun updateList() {

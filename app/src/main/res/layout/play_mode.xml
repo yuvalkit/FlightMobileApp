@@ -107,6 +107,17 @@
         app:layout_constraintVertical_bias="0.487"
         tools:ignore="MissingConstraints" />
 
+    <ImageView
+        android:id="@+id/screenshotView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/screenshot"
+        app:layout_constraintBottom_toTopOf="@+id/aileronText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:srcCompat="@tools:sample/avatars" />
+
     <!--    <com.example.flightmobileapp.Joystick-->
 <!--        android:id="@+id/joystick"-->
 <!--        android:layout_width="280dp"-->

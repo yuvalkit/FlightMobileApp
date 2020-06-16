@@ -7,4 +7,5 @@
     <string name="throttle">⟵     throttle     ⟶</string>
     <string name="aileron">⟵     aileron     ⟶</string>
     <string name="elevator">⟵     elevator     ⟶</string>
+    <string name="screenshot">screenshot</string>
 </resources>

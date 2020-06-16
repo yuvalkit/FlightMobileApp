@@ -1,11 +1,12 @@
 package com.example.flightmobileapp
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.play_mode.*
-import java.lang.Math.*
+import java.lang.Math.toRadians
 
 
 class PlayModeActivity : AppCompatActivity(), OnMoveListener, OnMultipleLongPressListener {
@@ -18,11 +19,19 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener, OnMultipleLongPres
         super.onCreate(savedInstanceState)
         setContentView(R.layout.play_mode)
         setSlidersRanges()
+        val b = intent.extras
+        val image = b!!.get("image")
+        var screenshot = (image as MyImage).screenshot
+        setScreenshot(screenshot)
         setSlidersListeners()
         joystick.setOnMoveListener(this)
     }
 
-
+    private fun setScreenshot(screenshot : Bitmap) {
+        runOnUiThread {
+            screenshotView.setImageBitmap(screenshot)
+        }
+    }
 
     private fun updateAileronAndElevator(angle : Int, strength : Int) {
         var ratio = strength.toDouble() / 100
