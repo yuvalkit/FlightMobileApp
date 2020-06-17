@@ -1,9 +1,8 @@
 package com.example.flightmobileapp
 
 import android.graphics.Bitmap
-import java.io.Serializable
 
-class MyScreenshot(screenshotInput : Bitmap) : Serializable {
+class MyScreenshot(screenshotInput : Bitmap) {
     companion object {
         lateinit var screenshot: Bitmap
     }

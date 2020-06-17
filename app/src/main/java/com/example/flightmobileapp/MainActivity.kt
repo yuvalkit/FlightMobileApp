@@ -1,13 +1,21 @@
 package com.example.flightmobileapp
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.room.Room
 import com.google.gson.GsonBuilder
 import kotlinx.android.synthetic.main.activity_main.*
@@ -18,15 +26,18 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.Thread.sleep
+
 
 class MainActivity : AppCompatActivity() {
     private var urlList = arrayListOf<String>()
     private var urlObjectList = arrayListOf<Button>()
+    private var errorId = 0
+    private var errorCounter = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         urlObjectList.addAll(listOf(url0, url1, url2, url3, url4))
         disableCapitalLetter()
         joinPopulate()
@@ -113,8 +124,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun deleteAllErrors() {
+        var i = 0
+        while(errorCounter > 0) {
+            var err = findViewById<TextView>(errorId - i)
+            runOnUiThread {
+                main_layout.removeView(err)
+                errorCounter--
+                i++
+            }
+        }
+    }
+
     private fun tryToConnect(){
-        var successFlag = false
+        var error = "Connection failed"
         var url = insertBox.text.toString()
         //var url = "http://10.0.2.2:50242"
         val gson = GsonBuilder() .setLenient() .create()
@@ -130,19 +153,22 @@ class MainActivity : AppCompatActivity() {
                     var bitmapImage = BitmapFactory.decodeStream(stream)
                     if (bitmapImage is Bitmap) {
                         MyScreenshot.screenshot = bitmapImage
-                        startActivity(Intent(this@MainActivity, PlayModeActivity::class.java))
+                        var intent = Intent(this@MainActivity, PlayModeActivity::class.java)
+                        intent.putExtra("url", url)
+                        startActivity(intent)
+                        deleteAllErrors()
                     } else {
-                        Log.d("EA", "failed. bitmapImage is $bitmapImage")
+                        showError(error)
                     }
 
                 }
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    Log.d("EA", "failed. response is $t")
+                    showError(error)
                 }
             })
         }
         catch(e: Exception) {
-            Log.d("EA", "in catch. failed trying getting image")
+            showError(error)
         }
     }
 
@@ -182,4 +208,21 @@ class MainActivity : AppCompatActivity() {
             insertBox.setText(button.text.toString())
         }
     }
+
+    private fun showError(error : String) {
+        var context = this
+        var id = ++errorId
+        Utils().createNewError(context, error, id, main_layout)
+        errorCounter++
+        GlobalScope.launch {
+            sleep(3000)
+            var text = findViewById<TextView>(id)
+            runOnUiThread {
+                main_layout.removeView(text)
+                errorCounter--
+            }
+        }
+    }
+
+
 }
