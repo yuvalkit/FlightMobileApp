@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.PopupMenu
 import android.widget.SeekBar
 import android.widget.TextView
@@ -14,6 +15,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.play_mode.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
@@ -22,6 +25,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.Math.toRadians
 import java.lang.Thread.sleep
+import java.net.SocketTimeoutException
+import kotlin.concurrent.thread
 
 
 class PlayModeActivity : AppCompatActivity(), OnMoveListener {
@@ -33,6 +38,7 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
     private var connected = true
     private var errorId = 0
     private var errorCounter = 0
+    private var locker = Mutex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,34 +75,10 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
 
     private fun getScreenshots() {
         var error = "Failed getting screenshot"
+        var operate = { image: Bitmap -> setScreenshot(image) }
+        var errOperate = { showError(error) }
         while (connected) {
-            Log.d("EA", "get screenshot")
-            val gson = GsonBuilder() .setLenient() .create()
-            try {
-                val retrofit = Retrofit.Builder()
-                    .baseUrl(url)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
-                    .build()
-                val api = retrofit.create(Api::class.java)
-                val body = api.getScreenshot().enqueue(object : Callback<ResponseBody> {
-                    override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                        val stream = response?.body()?.byteStream()
-                        var bitmapImage = BitmapFactory.decodeStream(stream)
-                        if (bitmapImage is Bitmap) {
-                            setScreenshot(bitmapImage)
-                        } else {
-                            showError(error)
-                        }
-
-                    }
-                    override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                        showError(error)
-                    }
-                })
-            }
-            catch(e: Exception) {
-                showError(error)
-            }
+            Utils().getScreenshot(url.toString(), operate, errOperate)
             sleep(1000)
         }
     }
@@ -129,14 +111,40 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
 
     private fun sendValuesCommand() {
         var command = Command(lastAileron, lastRudder, lastElevator, lastThrottle)
-        if (!sendCommand(command)) {
-
-        }
+        sendCommand(command)
     }
 
-    private fun sendCommand(command : Command) : Boolean {
-
-        return true
+    private fun sendCommand(command : Command) {
+        var error = "Failed trying sending values to simulator"
+        var timeout = "Timeout - The Simulator Is Not Responding"
+        val gson = GsonBuilder() .setLenient() .create()
+        try {
+            val retrofit = Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build()
+            val api = retrofit.create(Api::class.java)
+            api.sendCommand(command).enqueue(object : Callback<ResponseBody> {
+                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    if(!response.isSuccessful) {
+                        Log.d("EA", "fail send 1")
+                        showError(error)
+                    }
+                }
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    Log.d("EA", "fail send 2")
+                    if(t is SocketTimeoutException) {
+                        showError(timeout)
+                    } else {
+                        showError(error)
+                    }
+                }
+            })
+        }
+        catch(e: Exception) {
+            Log.d("EA", "fail send 3")
+            showError(error)
+        }
     }
 
     private fun setSlidersRanges() {
@@ -203,18 +211,32 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         updateAileronAndElevator(angle, strength)
     }
 
+    private fun getErrId() : Int = runBlocking<Int> {
+        var id = 0
+        var execute = GlobalScope.launch {
+            locker.lock()
+            errorId++
+            id = errorId
+            locker.unlock()
+        }
+        execute.join()
+        return@runBlocking id
+    }
+
     private fun showError(error : String) {
         var context = this
-        var id = ++errorId
-        Utils().createNewError(context, error, id, play_mode_layout)
-        errorCounter++
-        GlobalScope.launch {
+        var id = getErrId()
+        thread(start = true) {
+            runOnUiThread {
+                Utils().createNewError(context, error, id, play_mode_layout)
+            }
+            errorCounter++
             sleep(3000)
             var text = findViewById<TextView>(id)
             runOnUiThread {
                 play_mode_layout.removeView(text)
-                errorCounter--
             }
+            errorCounter--
         }
     }
 

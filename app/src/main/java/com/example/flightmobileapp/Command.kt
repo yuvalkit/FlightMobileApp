@@ -1,8 +1,10 @@
 package com.example.flightmobileapp
 
-class Command(aileronInput : Double, rudderInput : Double, elevatorInput : Double, throttleInput : Double) {
-    private var aileron = aileronInput
-    private var rudder = rudderInput
-    private var elevator = elevatorInput
-    private var throttle = throttleInput
-}
+import com.google.gson.annotations.SerializedName
+
+data class Command (
+    @SerializedName("aileron") var Aileron: Double,
+    @SerializedName("rudder") var Rudder: Double,
+    @SerializedName("elevator") var Elevator: Double,
+    @SerializedName("throttle") var Throttle: Double
+)

@@ -19,7 +19,9 @@ import androidx.constraintlayout.widget.ConstraintSet
 import androidx.room.Room
 import com.google.gson.GsonBuilder
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.play_mode.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
@@ -27,6 +29,8 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.Thread.sleep
+import java.lang.reflect.InvocationTargetException
+import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
@@ -34,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var urlObjectList = arrayListOf<Button>()
     private var errorId = 0
     private var errorCounter = 0
+    private var locker = Mutex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,37 +144,16 @@ class MainActivity : AppCompatActivity() {
     private fun tryToConnect(){
         var error = "Connection failed"
         var url = insertBox.text.toString()
-        //var url = "http://10.0.2.2:50242"
-        val gson = GsonBuilder() .setLenient() .create()
-        try {
-            val retrofit = Retrofit.Builder()
-                .baseUrl(url)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build()
-            val api = retrofit.create(Api::class.java)
-            val body = api.getScreenshot().enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    val stream = response?.body()?.byteStream()
-                    var bitmapImage = BitmapFactory.decodeStream(stream)
-                    if (bitmapImage is Bitmap) {
-                        MyScreenshot.screenshot = bitmapImage
-                        var intent = Intent(this@MainActivity, PlayModeActivity::class.java)
-                        intent.putExtra("url", url)
-                        startActivity(intent)
-                        deleteAllErrors()
-                    } else {
-                        showError(error)
-                    }
 
-                }
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    showError(error)
-                }
-            })
+        var operate = {image : Bitmap ->
+            MyScreenshot.screenshot = image
+            var intent = Intent(this@MainActivity, PlayModeActivity::class.java)
+            intent.putExtra("url", url)
+            startActivity(intent)
+            deleteAllErrors()
         }
-        catch(e: Exception) {
-            showError(error)
-        }
+        var errOperate = {showError(error)}
+        Utils().getScreenshot(url, operate, errOperate)
     }
 
     private fun updateList() {
@@ -209,18 +193,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getErrId() : Int = runBlocking<Int> {
+        var id = 0
+        var execute = GlobalScope.launch {
+            locker.lock()
+            errorId++
+            id = errorId
+            locker.unlock()
+        }
+        execute.join()
+        return@runBlocking id
+    }
+
     private fun showError(error : String) {
         var context = this
-        var id = ++errorId
-        Utils().createNewError(context, error, id, main_layout)
-        errorCounter++
-        GlobalScope.launch {
+        var id = getErrId()
+        thread(start = true) {
+            runOnUiThread {
+                Utils().createNewError(context, error, id, main_layout)
+            }
+            errorCounter++
             sleep(3000)
             var text = findViewById<TextView>(id)
             runOnUiThread {
                 main_layout.removeView(text)
-                errorCounter--
             }
+            errorCounter--
         }
     }
 
