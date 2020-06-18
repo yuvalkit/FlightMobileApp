@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/play_mode_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <SeekBar
+        android:id="@+id/throttleBar"
+        android:layout_width="230dp"
+        android:layout_height="60dp"
+        android:layout_marginEnd="190dp"
+        android:progressTint="#199BFF"
+        android:rotation="-90"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <SeekBar
+        android:id="@+id/rudderBar"
+        android:layout_width="230dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="35dp"
+        android:progressTint="#199BFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/rudderText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="@string/rudder"
+        android:textColor="#000000"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/aileronText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/aileron"
+        android:textColor="#000000"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/throttleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="245dp"
+        android:rotation="90"
+        android:text="@string/throttle"
+        android:textColor="#000000"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/elevatorText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="245dp"
+        android:rotation="90"
+        android:text="@string/elevator"
+        android:textColor="#000000"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.example.flightmobileapp.Joystick
+        android:id="@+id/joystick"
+        android:layout_width="226dp"
+        android:layout_height="213dp"
+        android:elevation="2dp"
+        app:JV_backgroundColor="#3080F6"
+        app:JV_borderColor="#4EB1FF"
+        app:JV_borderWidth="20dp"
+        app:JV_buttonColor="#0732CC"
+        app:JV_buttonSizeRatio="25%"
+        app:JV_fixedCenter="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints" />
+
+    <ImageView
+        android:id="@+id/screenshotView"
+        android:layout_width="302dp"
+        android:layout_height="247dp"
+        android:contentDescription="@string/screenshot"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline2"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="365dp" />
+
+    <!--    <com.example.flightmobileapp.Joystick-->
+    <!--        android:id="@+id/joystick"-->
+    <!--        android:layout_width="280dp"-->
+    <!--        android:layout_height="280dp"-->
+    <!--        android:layout_weight="5"-->
+    <!--        app:layout_constraintBottom_toTopOf="@+id/rudderText"-->
+    <!--        app:layout_constraintEnd_toStartOf="@+id/elevatorText"-->
+    <!--        app:layout_constraintHorizontal_bias="0.504"-->
+    <!--        app:layout_constraintStart_toEndOf="@+id/throttleText"-->
+    <!--        app:layout_constraintTop_toBottomOf="@+id/aileronText"-->
+    <!--        app:layout_constraintVertical_bias="0.0" />-->
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

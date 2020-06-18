@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var errorId = 0
     private var errorCounter = 0
     private var locker = Mutex()
+    private var dbLocker = Mutex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,8 +93,9 @@ class MainActivity : AppCompatActivity() {
         Log.d("EA", "entered ${i} objects")
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
+        Log.d("EA", "main pause")
         CoroutineScope(Dispatchers.IO).launch {
             saveDB()
         }
@@ -142,7 +144,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tryToConnect(){
-        var error = "Connection failed"
+        var error = "Failed trying connect with server"
         var url = insertBox.text.toString()
 
         var operate = {image : Bitmap ->
@@ -152,8 +154,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
             deleteAllErrors()
         }
-        var errOperate = {showError(error)}
-        Utils().getScreenshot(url, operate, errOperate)
+
+        var errOperate = {msg : String -> showError(msg)}
+        Utils().getScreenshot(url, operate, errOperate, error)
     }
 
     private fun updateList() {

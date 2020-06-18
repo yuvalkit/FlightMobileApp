@@ -53,7 +53,7 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
 
     override fun onStop() {
         super.onStop()
-        Log.d("EA", "stop")
+        Log.d("EA", "play stop")
         connected = false
     }
 
@@ -76,9 +76,9 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
     private fun getScreenshots() {
         var error = "Failed getting screenshot"
         var operate = { image: Bitmap -> setScreenshot(image) }
-        var errOperate = { showError(error) }
+        var errOperate = { msg : String -> showError(msg) }
         while (connected) {
-            Utils().getScreenshot(url.toString(), operate, errOperate)
+            Utils().getScreenshot(url.toString(), operate, errOperate, error)
             sleep(1000)
         }
     }
@@ -127,8 +127,12 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
             api.sendCommand(command).enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                     if(!response.isSuccessful) {
-                        Log.d("EA", "fail send 1")
-                        showError(error)
+                        var msg = Utils().createMsgError(response)
+                        if(msg == "") {
+                            showError(error)
+                        } else {
+                            showError(msg)
+                        }
                     }
                 }
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
@@ -143,7 +147,7 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         }
         catch(e: Exception) {
             Log.d("EA", "fail send 3")
-            showError(error)
+            showError("Failed trying to connect with server")
         }
     }
 

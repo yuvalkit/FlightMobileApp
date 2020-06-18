@@ -19,8 +19,10 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.lang.Exception
-import java.lang.reflect.InvocationTargetException
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.net.SocketTimeoutException
 
 class Utils {
     fun createNewError(context : Context, error : String, id : Int, layout : ConstraintLayout) {
@@ -55,7 +57,8 @@ class Utils {
     }
 
     @Throws(Exception::class)
-    fun getScreenshot(url :String, function : (Bitmap) -> Unit,errOperate : () -> Unit) {
+    fun getScreenshot(url :String, function : (Bitmap) -> Unit,errOperate : (String) -> Unit, errMsg : String) {
+        var timeout = "Timeout - The Simulator Is Not Responding"
         try {
             val gson = GsonBuilder() .setLenient() .create()
             val retrofit = Retrofit.Builder()
@@ -72,21 +75,56 @@ class Utils {
                             function(bitmapImage)
                         } else {
                             Log.d("EA", "fail 1")
-                            errOperate()
+                            errOperate("Got invalid response")
                         }
                     } else {
                         Log.d("EA", "fail 2")
-                        errOperate()
+                        var msg = createMsgError(response)
+                        if(msg == "") {
+                            errOperate(errMsg)
+                        } else {
+                            errOperate(msg)
+                        }
                     }
                 }
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     Log.d("EA", "fail 3")
-                    errOperate()
+                    if(t is SocketTimeoutException) {
+                        errOperate(timeout)
+                    } else {
+                        errOperate(errMsg)
+                    }
+
                 }
             })
         }
         catch (e : Exception) {
-            errOperate()
+            errOperate("Failed trying connect with server")
         }
+    }
+
+    public fun createMsgError(response : Response<ResponseBody>) : String {
+        var reader: BufferedReader? = null
+        val sb = StringBuilder()
+        try {
+            reader =
+                BufferedReader(
+                    InputStreamReader(
+                        response.errorBody()!!.byteStream()
+                    )
+                )
+            var line: String? = null
+            try {
+                while (reader.readLine().also({ line = it }) != null) {
+                    sb.append(line)
+                }
+            } catch (e: IOException) {
+                return ""
+            }
+        } catch (e: IOException) {
+            return ""
+        }
+
+        return sb.toString()
     }
 }

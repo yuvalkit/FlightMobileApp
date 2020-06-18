@@ -305,9 +305,9 @@ class Joystick @JvmOverloads constructor(
                 var times = 10
                 var eachSleep = 20L
                 if(down) {
-                    reset = true
                     down = false
                     show = false
+                    reset = true
                     GlobalScope.launch {
                         resetButtonPosition(times, eachSleep)
                         // update now the last strength and angle which should be zero after resetButton
