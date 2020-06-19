@@ -183,14 +183,12 @@ class Joystick @JvmOverloads constructor(
             mThread!!.interrupt()
             /** Re-center the button or not (depending on settings) */
             if (isAutoReCenterButton) {
-                val times = 10
-                val eachSleep = 20L
                 if (down) {
                     down = false
                     show = false
                     reset = true
                     GlobalScope.launch {
-                        resetButtonPosition(times, eachSleep)
+                        resetButtonPosition()
                         if (mCallback != null) mCallback!!.onMove(angle, strength)
                         reset = false
                     }
@@ -276,7 +274,9 @@ class Joystick @JvmOverloads constructor(
                     * (mPosY - mCenterY).toDouble()
         ) / mBorderRadius).toInt()
 
-    private fun resetButtonPosition(times: Int, eachSleep: Long) {
+    private fun resetButtonPosition() {
+        val times = 10
+        val eachSleep = 20L
         val extraX = (mCenterX - mPosX) / times
         val extraY = (mCenterY - mPosY) / times
         var x = mPosX
@@ -306,10 +306,7 @@ class Joystick @JvmOverloads constructor(
     }
 
     fun setOnMoveListener(l: OnMoveListener?) {
-        setOnMoveListener(l, DEFAULT_LOOP_INTERVAL)
-    }
-
-    private fun setOnMoveListener(l: OnMoveListener?, loopInterval: Int) {
+        val loopInterval = DEFAULT_LOOP_INTERVAL
         mCallback = l
         mLoopInterval = loopInterval.toLong()
     }
