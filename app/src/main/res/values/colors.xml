@@ -4,4 +4,7 @@
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
     <color name="colorBlue">#2247FF</color>
+    <color name="joystickButton">#89C3FF</color>
+    <color name="joystickBackground">#0C2A75</color>
+    <color name="joystickBorder">#3A6FC6</color>
 </resources>

@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 @Entity
 class MyUrlEntity {
     @PrimaryKey
-    var urlId : Int = 0
+    var urlId: Int = 0
 
     @ColumnInfo(name = "url")
-    var url : String = ""
+    var url: String = ""
 }

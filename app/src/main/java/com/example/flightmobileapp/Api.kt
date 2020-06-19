@@ -11,5 +11,5 @@ interface Api {
     fun getScreenshot(): Call<ResponseBody>
 
     @POST("/api/command")
-    fun sendCommand(@Body command: Command) : Call<ResponseBody>
+    fun sendCommand(@Body command: Command): Call<ResponseBody>
 }

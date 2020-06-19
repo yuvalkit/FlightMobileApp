@@ -7,8 +7,8 @@ import androidx.room.Query
 @Dao
 interface UrlDAO {
     @Insert
-    suspend fun saveUrl(url : MyUrlEntity)
+    suspend fun saveUrl(url: MyUrlEntity)
 
     @Query("SELECT * FROM MyUrlEntity")
-    suspend fun readUrl() : List<MyUrlEntity>
+    suspend fun readUrl(): List<MyUrlEntity>
 }

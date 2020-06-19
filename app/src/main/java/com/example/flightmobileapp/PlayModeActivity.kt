@@ -1,17 +1,11 @@
 package com.example.flightmobileapp
 
-import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.widget.PopupMenu
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.GsonBuilder
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.play_mode.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -28,14 +22,13 @@ import java.lang.Thread.sleep
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
 
-
 class PlayModeActivity : AppCompatActivity(), OnMoveListener {
     private var lastRudder = 0.0
     private var lastThrottle = 0.0
     private var lastAileron = 0.0
     private var lastElevator = 0.0
-    private var url : String? = null
-    private var connected = true
+    private var url: String? = null
+    private var keepSending = true
     private var errorId = 0
     private var errorCounter = 0
     private var locker = Mutex()
@@ -44,23 +37,26 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.play_mode)
         setSlidersRanges()
+        /** Get the url string from the main activity intent */
         url = intent.getStringExtra("url")
+        /** Set the given screenshot */
         setScreenshot(MyScreenshot.screenshot)
         setSlidersListeners()
+        /** Set the rudder bar to 0 as a start (this is 100 before the adjustment) */
         rudderBar.progress = rudderBar.max / 2
         joystick.setOnMoveListener(this)
     }
 
     override fun onStop() {
         super.onStop()
-        Log.d("EA", "play stop")
-        connected = false
+        /** Stop getting screenshots */
+        keepSending = false
     }
 
     override fun onResume() {
         super.onResume()
-        Log.d("EA", "resume")
-        connected = true
+        /** Continue getting screenshots */
+        keepSending = true
         GlobalScope.launch {
             getScreenshots()
         }
@@ -68,91 +64,116 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
 
     override fun onBackPressed() {
         super.onBackPressed()
-        Log.d("EA", "back")
-        connected = false
+        /** Stop getting screenshots and delete all errors */
+        keepSending = false
         deleteAllErrors()
     }
 
     private fun getScreenshots() {
-        var error = "Failed getting screenshot"
-        var operate = { image: Bitmap -> setScreenshot(image) }
-        var errOperate = { msg : String -> showError(msg) }
-        while (connected) {
-            Utils().getScreenshot(url.toString(), operate, errOperate, error)
+        /** Set the screenshot image on success */
+        val operate = { image: Bitmap -> setScreenshot(image) }
+
+        /** Show error message on fail */
+        val errOperate = { msg: String -> showError(msg) }
+        /** While needs to keep sending requests to the server */
+        while (keepSending) {
+            /** Send a screenshot GET request every 1 second */
+            Utils().getScreenshot(url.toString(), operate, errOperate, Utils().screenshotError)
             sleep(1000)
         }
     }
 
-    private fun setScreenshot(screenshot : Bitmap) {
+    private fun setScreenshot(screenshot: Bitmap) {
         runOnUiThread {
+            /** Set the screenshot image on the view layout */
             screenshotView.setImageBitmap(screenshot)
         }
     }
 
-    private fun updateAileronAndElevator(angle : Int, strength : Int) {
+    private fun updateAileronAndElevator(angle: Int, strength: Int) {
         var changed = false
-        var ratio = strength.toDouble() / 100
-        var x = kotlin.math.cos(toRadians(angle.toDouble())) * ratio
-        var y = kotlin.math.sin(toRadians(angle.toDouble())) * ratio
-        if(hasChanged(x, lastAileron, 2.0)) {
+        val ratio = strength.toDouble() / 100
+
+        /** Get the x and y values from the angle and strength of the joystick */
+        val x = kotlin.math.cos(toRadians(angle.toDouble())) * ratio
+        val y = kotlin.math.sin(toRadians(angle.toDouble())) * ratio
+        /** If the aileron changed more than 1% */
+        if (hasChanged(x, lastAileron, 2.0)) {
             changed = true
-            Log.d("EA", "aileron is changed to ${x}")
             lastAileron = x
         }
-        if(hasChanged(y, lastElevator, 2.0)) {
+        /** If the elevator changed more than 1% */
+        if (hasChanged(y, lastElevator, 2.0)) {
             changed = true
-            Log.d("EA", "elevator is changed to ${y}")
             lastElevator = y
         }
+        /** If something changed more than 1%, send all values to the server */
         if (changed) {
             sendValuesCommand()
         }
     }
 
     private fun sendValuesCommand() {
-        var command = Command(lastAileron, lastRudder, lastElevator, lastThrottle)
+        /** Create a new command with all the values and send it to server */
+        val command = Command(lastAileron, lastRudder, lastElevator, lastThrottle)
         sendCommand(command)
     }
 
-    private fun sendCommand(command : Command) {
-        var error = "Failed trying sending values to simulator"
-        var timeout = "Timeout - The Simulator Is Not Responding"
-        val gson = GsonBuilder() .setLenient() .create()
+    private fun sendCommand(command: Command) {
+        val gson = GsonBuilder().setLenient().create()
         try {
             val retrofit = Retrofit.Builder()
-                .baseUrl(url)
+                .baseUrl(url.toString())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()
             val api = retrofit.create(Api::class.java)
+            /** Send command request to the server */
             api.sendCommand(command).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    if(!response.isSuccessful) {
-                        var msg = Utils().createMsgError(response)
-                        if(msg == "") {
-                            showError(error)
-                        } else {
-                            showError(msg)
-                        }
-                    }
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    /** Show error if the response is invalid */
+                    checkResponse(response)
                 }
+
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    Log.d("EA", "fail send 2")
-                    if(t is SocketTimeoutException) {
-                        showError(timeout)
-                    } else {
-                        showError(error)
-                    }
+                    failureError(t)
                 }
             })
+        } catch (e: Exception) {
+            /** If this is a connection error */
+            showError(Utils().connectionError)
         }
-        catch(e: Exception) {
-            Log.d("EA", "fail send 3")
-            showError("Failed trying to connect with server")
+    }
+
+    private fun failureError(t: Throwable) {
+        /** If this is a timeout failure */
+        if (t is SocketTimeoutException) {
+            showError(Utils().timeoutError)
+        } else {
+            showError(Utils().valuesError)
+        }
+    }
+
+    private fun checkResponse(response: Response<ResponseBody>) {
+        /** If the response is not with status 200-300 */
+        if (!response.isSuccessful) {
+            /** Get the error from the response */
+            val msg = Utils().getMessageFromResponse(response)
+            /** If failed, show values error, else shows that error */
+            if (msg == "") {
+                showError(Utils().valuesError)
+            } else {
+                showError(msg)
+            }
         }
     }
 
     private fun setSlidersRanges() {
+        /** Throttle range is [0,1] so set max to 100 progress */
         throttleBar.max = 100
+        /** Rudder range is [-1,1] so set max to 200 progress */
         rudderBar.max = 200
     }
 
@@ -161,63 +182,72 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         setSliderListener(rudderBar, 1)
     }
 
-    private fun getAbs(value : Double) : Double {
-        if(value < 0) {
+    private fun getAbs(value: Double): Double {
+        /** Return the absolute value */
+        if (value < 0) {
             return value * -1
         }
         return value
     }
 
-    private fun hasChanged(newVal : Double, prevVal : Double, range : Double) : Boolean {
-        if(getAbs(newVal - prevVal) > 0.01 * range) {
+    private fun hasChanged(newVal: Double, prevVal: Double, range: Double): Boolean {
+        /** If the values are different in more than 1% of the given range */
+        if (getAbs(newVal - prevVal) > 0.01 * range) {
             return true
         }
         return false
     }
 
-    private fun setSliderListener(bar : SeekBar, minus : Int) {
+    private fun setSliderListener(bar: SeekBar, minus: Int) {
         bar.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
                 seek: SeekBar,
                 progress: Int, fromUser: Boolean
             ) {
-                var changed = false
-                val value = (progress.toDouble()/100) - minus
-                // the bar is rudderBar
-                if(minus == 1) {
-                    if(hasChanged(value, lastRudder, 2.0)) {
-                        changed = true
-                        Log.d("EA", "rudder is changed to ${value.toString()}")
-                        lastRudder = value
-                    }
-                } else {
-                    if(hasChanged(value, lastThrottle, 1.0)) {
-                        changed = true
-                        Log.d("EA", "throttle is changed to ${value.toString()}")
-                        lastThrottle = value
-                    }
-                }
-                if (changed) {
-                    sendValuesCommand()
-                }
-
+                /** Send the values to the server if they changed more than 1% */
+                sendValuesIfChanged(progress, minus)
             }
 
             override fun onStartTrackingTouch(seek: SeekBar) {}
-
-            override fun onStopTrackingTouch(seek: SeekBar) {
-            }
+            override fun onStopTrackingTouch(seek: SeekBar) {}
         })
     }
 
+    private fun sendValuesIfChanged(progress: Int, minus: Int) {
+        var changed = false
+
+        /** Adjust the progress value to the simulator values range */
+        val value = (progress.toDouble() / 100) - minus
+        /** If the minus is 1, this is the rudder bar */
+        if (minus == 1) {
+            /** If the rudder changed in more than 1% */
+            if (hasChanged(value, lastRudder, 2.0)) {
+                changed = true
+                lastRudder = value
+            }
+        } else {
+            /** If the throttle changed in more than 1% */
+            if (hasChanged(value, lastThrottle, 1.0)) {
+                changed = true
+                lastThrottle = value
+            }
+        }
+        /** If something changed more than 1%, send all values to the server */
+        if (changed) {
+            sendValuesCommand()
+        }
+    }
+
     override fun onMove(angle: Int, strength: Int) {
+        /** Update these values when the joystick moves */
         updateAileronAndElevator(angle, strength)
     }
 
-    private fun getErrId() : Int = runBlocking<Int> {
+    private fun getErrId(): Int = runBlocking {
         var id = 0
-        var execute = GlobalScope.launch {
+        val execute = GlobalScope.launch {
+            /** Get the error id with locks */
             locker.lock()
             errorId++
             id = errorId
@@ -227,16 +257,19 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         return@runBlocking id
     }
 
-    private fun showError(error : String) {
-        var context = this
-        var id = getErrId()
+    private fun showError(error: String) {
+        val context = this
+        val id = getErrId()
         thread(start = true) {
+            /** Create a new error text view with the given string */
             runOnUiThread {
                 Utils().createNewError(context, error, id, play_mode_layout)
             }
             errorCounter++
-            sleep(3000)
-            var text = findViewById<TextView>(id)
+            /** Show the error for 3 seconds */
+            sleep(Utils().errorSleepMilliseconds)
+            val text = findViewById<TextView>(id)
+            /** Remove the error text view */
             runOnUiThread {
                 play_mode_layout.removeView(text)
             }
@@ -246,8 +279,10 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
 
     private fun deleteAllErrors() {
         var i = 0
-        while(errorCounter > 0) {
-            var err = findViewById<TextView>(errorId - i)
+        /** Until there are no more errors */
+        while (errorCounter > 0) {
+            /** Get the error text view and remove it */
+            val err = findViewById<TextView>(errorId - i)
             runOnUiThread {
                 play_mode_layout.removeView(err)
                 errorCounter--
