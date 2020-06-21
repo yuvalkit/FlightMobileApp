@@ -32,6 +32,7 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
     private var errorId = 0
     private var errorCounter = 0
     private var locker = Mutex()
+    private val urlToApiMap: MutableMap<String, Api> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,8 +78,19 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
         val errOperate = { msg: String -> showError(msg) }
         /** While needs to keep sending requests to the server */
         while (keepSending) {
+            if (!urlToApiMap.containsKey(url) && !createApi()) {
+                showError(Utils().connectionError)
+                continue
+            }
             /** Send a screenshot GET request every 1 second */
-            Utils().getScreenshot(url.toString(), operate, errOperate, Utils().screenshotError)
+            urlToApiMap[url.toString()]?.let {
+                Utils().getScreenshot(
+                    it,
+                    operate,
+                    errOperate,
+                    Utils().screenshotError
+                )
+            }
             sleep(1000)
         }
     }
@@ -120,15 +132,14 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
     }
 
     private fun sendCommand(command: Command) {
-        val gson = GsonBuilder().setLenient().create()
+        if (!urlToApiMap.containsKey(url) && !createApi()) {
+            showError(Utils().connectionError)
+            return
+        }
+        val api = urlToApiMap[url.toString()]
         try {
-            val retrofit = Retrofit.Builder()
-                .baseUrl(url.toString())
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build()
-            val api = retrofit.create(Api::class.java)
             /** Send command request to the server */
-            api.sendCommand(command).enqueue(object : Callback<ResponseBody> {
+            api?.sendCommand(command)?.enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
                     response: Response<ResponseBody>
@@ -145,6 +156,22 @@ class PlayModeActivity : AppCompatActivity(), OnMoveListener {
             /** If this is a connection error */
             showError(Utils().connectionError)
         }
+    }
+
+    private fun createApi(): Boolean {
+        try {
+            val gson = GsonBuilder().setLenient().create()
+            val retrofit = Retrofit.Builder()
+                .baseUrl(url.toString())
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build()
+            val api = retrofit.create(Api::class.java)
+            urlToApiMap[url.toString()] = api
+        } catch (e: Exception) {
+            showError(Utils().connectionError)
+            return false
+        }
+        return true
     }
 
     private fun failureError(t: Throwable) {

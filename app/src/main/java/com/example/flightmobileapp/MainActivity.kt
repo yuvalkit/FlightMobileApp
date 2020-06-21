@@ -8,9 +8,12 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.room.Room
+import com.google.gson.GsonBuilder
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.Thread.sleep
 import kotlin.concurrent.thread
 
@@ -131,6 +134,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun tryToConnect() {
         val url = insertBox.text.toString()
+        val api: Api?
 
         /** If the connection succeeded, go to the play mode activity */
         val operate = { image: Bitmap ->
@@ -140,11 +144,21 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
             deleteAllErrors()
         }
-
+        try {
+            val gson = GsonBuilder().setLenient().create()
+            val retrofit = Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build()
+            api = retrofit.create(Api::class.java)
+        } catch (e: Exception) {
+            showError(Utils().connectionError)
+            return
+        }
         /** If something failed, show the error message */
         val errOperate = { msg: String -> showError(msg) }
         /** Trying to get a screenshot by connecting to the server */
-        Utils().getScreenshot(url, operate, errOperate, Utils().connectionError)
+        Utils().getScreenshot(api, operate, errOperate, Utils().connectionError)
     }
 
     private fun updateList() {

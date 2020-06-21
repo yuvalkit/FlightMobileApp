@@ -84,18 +84,12 @@ class Utils {
 
     @Throws(Exception::class)
     fun getScreenshot(
-        url: String,
+        api : Api,
         function: (Bitmap) -> Unit,
         errOperate: (String) -> Unit,
         errMsg: String
     ) {
         try {
-            val gson = GsonBuilder().setLenient().create()
-            val retrofit = Retrofit.Builder()
-                .baseUrl(url)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build()
-            val api = retrofit.create(Api::class.java)
             /** Send GET screenshot request */
             api.getScreenshot().enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
