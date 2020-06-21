@@ -11,13 +11,10 @@ import android.view.View
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
-import com.google.gson.GsonBuilder
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -29,7 +26,7 @@ class Utils {
     val screenshotError = "Failed getting screenshot from server"
     val valuesError = "Failed sending values to server"
     val timeoutError = "Timeout - the server is not responding"
-    val invalidScreenshotError = "Got invalid screenshot"
+    private val invalidScreenshotError = "Got invalid screenshot"
     val errorSleepMilliseconds = 3000L
 
     fun createNewError(context: Context, error: String, id: Int, layout: ConstraintLayout) {
@@ -84,7 +81,7 @@ class Utils {
 
     @Throws(Exception::class)
     fun getScreenshot(
-        api : Api,
+        api: Api,
         function: (Bitmap) -> Unit,
         errOperate: (String) -> Unit,
         errMsg: String
